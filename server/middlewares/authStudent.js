@@ -1,7 +1,16 @@
 import jwt from 'jsonwebtoken';
 
 const authStudent = async (req, res, next) => {
-  const token = req.cookies?.Studentlogintoken;
+  // Try getting token from cookie first
+  let token = req.cookies?.Studentlogintoken;
+
+  // Fallback to Authorization header if not in cookie
+  if (!token && req.headers.authorization) {
+    const bearer = req.headers.authorization.split(' ');
+    if (bearer[0] === 'Bearer' && bearer[1]) {
+      token = bearer[1];
+    }
+  }
 
   if (!token) {
     return res.status(401).json({ success: false, message: 'Not Authorized, token missing' });

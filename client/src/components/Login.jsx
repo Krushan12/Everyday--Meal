@@ -3,7 +3,7 @@ import { useAppcontext } from '../context/Appcontext';
 import { toast } from 'react-hot-toast';
 
 const Login = ({ onClose, isVendor = false }) => {
-  const { setStudent, setseller, navigate, axios } = useAppcontext();
+  const { setStudent, setseller, storeStudentToken, storeVendorToken, navigate, axios } = useAppcontext();
   const [state, setState] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,13 +60,21 @@ const Login = ({ onClose, isVendor = false }) => {
       const response = await axios.post(endpoint, loginData);
       
       if (response.data.success) {
+        // Extract token from response headers or cookies (if available)
+        const authHeader = response.headers?.authorization;
+        const token = authHeader ? authHeader.split(' ')[1] : null;
+        
         // Set user state and navigate to dashboard
         if (isVendor) {
           setseller(response.data.vendor || response.data.seller);
+          // Store token in localStorage
+          storeVendorToken(token);
           onClose();
           navigate("/vendor/dashboard");
         } else {
           setStudent(response.data.student);
+          // Store token in localStorage
+          storeStudentToken(token);
           onClose();
           navigate("/student/dashboard");
         }

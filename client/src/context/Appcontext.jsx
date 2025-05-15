@@ -5,6 +5,20 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
+// Add axios interceptor to include token in Authorization header if available
+axios.interceptors.request.use(config => {
+  const studentToken = localStorage.getItem('studentToken');
+  const vendorToken = localStorage.getItem('vendorToken');
+  
+  if (config.url.includes('/api/Student') && studentToken) {
+    config.headers.Authorization = `Bearer ${studentToken}`;
+  } else if (config.url.includes('/api/Vendor') && vendorToken) {
+    config.headers.Authorization = `Bearer ${vendorToken}`;
+  }
+  
+  return config;
+});
+
 export const Appcontext = createContext();
 
 export const Appcontextprovider = ({ children }) => {
@@ -28,6 +42,8 @@ export const Appcontextprovider = ({ children }) => {
         }
       } catch (error) {
         console.log('Student not authenticated');
+        // Clear localStorage token if authentication fails
+        localStorage.removeItem('studentToken');
       }
     };
 
@@ -40,6 +56,8 @@ export const Appcontextprovider = ({ children }) => {
         }
       } catch (error) {
         console.log('Vendor not authenticated');
+        // Clear localStorage token if authentication fails
+        localStorage.removeItem('vendorToken');
       }
     };
 
@@ -55,9 +73,14 @@ export const Appcontextprovider = ({ children }) => {
     try {
       await axios.get('/api/Student/logout');
       setStudent(null);
+      // Remove token from localStorage
+      localStorage.removeItem('studentToken');
       navigate("/");
     } catch (error) {
       console.error('Error logging out student:', error);
+      // Still remove token and reset state on error
+      localStorage.removeItem('studentToken');
+      setStudent(null);
     }
   };
 
@@ -65,9 +88,14 @@ export const Appcontextprovider = ({ children }) => {
     try {
       await axios.get('/api/Vendor/logout');
       setseller(null);
+      // Remove token from localStorage
+      localStorage.removeItem('vendorToken');
       navigate("/");
     } catch (error) {
       console.error('Error logging out vendor:', error);
+      // Still remove token and reset state on error
+      localStorage.removeItem('vendorToken');
+      setseller(null);
     }
   };
 
@@ -78,10 +106,22 @@ export const Appcontextprovider = ({ children }) => {
       if (student && seller) clearSeller();
       setStudent(student);
     },
+    // Add function to store student token in localStorage
+    storeStudentToken: (token) => {
+      if (token) {
+        localStorage.setItem('studentToken', token);
+      }
+    },
     seller,
     setseller: (vendor) => {
       if (vendor && Student) clearStudent();
       setseller(vendor);
+    },
+    // Add function to store vendor token in localStorage
+    storeVendorToken: (token) => {
+      if (token) {
+        localStorage.setItem('vendorToken', token);
+      }
     },
     isseller,
     setisseller,
